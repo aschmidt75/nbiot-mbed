@@ -29,12 +29,22 @@ ModemResponse::ModemResponse(ModemResponse& r) :
     b_ok(r.b_ok), b_error(r.b_error), b_unsolicited(r.b_unsolicited),
     cmdresponses(r.cmdresponses), responses(r.responses) { }
 
-string ModemResponse::getCommandResponse(const string& key) {
+bool ModemResponse::getCommandResponse(const string& key, string& value) {
     multimap<string,string>::iterator it = cmdresponses.find(key);
     if (it != cmdresponses.end()) {
-        return it->second;
+        value = it->second;
+        return true;
     }
-    return string();
+    return false;
+}
+
+bool ModemResponse::hasResponse(const string& key) {
+    for ( list<string>::iterator it = responses.begin(); it != responses.end(); ++it) {
+        if ( key == *it) {
+            return true;
+        }
+    }
+    return false;
 }
 
 ModemResponse* ModemResponse_init(ModemResponseAlloc *m) {

@@ -29,6 +29,12 @@ using namespace std;
 
 class ModemCommandAdapter;
 
+/**
+ * A ModemResponse is a block of data as the modem's response
+ * to a command previously sent or received as unsolicited. 
+ * It contains status (OK/ERROR), command responses (e.g. +XYZ=1)
+ * or plain-text responses (e.g. "rebooted").
+ */
 class ModemResponse {
 friend class ModemCommandAdapter;
 
@@ -40,9 +46,11 @@ public:
     bool hasError() const { return b_error; };
     bool isUnsolicited() const { return b_unsolicited; };
 
-    string getCommandResponse(const string& key);
     multimap<string,string>& getCommandResponses() { return cmdresponses; }
+    bool getCommandResponse(const string& key, string& value);
+
     list<string>& getResponses() { return responses; }
+    bool hasResponse(const string& key);
 
 protected:    
     bool b_ok;              // modem returned with "OK"
