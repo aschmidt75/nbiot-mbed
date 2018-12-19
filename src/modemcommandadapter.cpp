@@ -62,11 +62,11 @@ void debug_0_impl(const char *p, const size_t sz, char prefix) {
 ModemCommandAdapter::ModemCommandAdapter(RawSerial& modem) : _state(idle), _modem(modem), _cur_response(NULL) {
     reset_buf();
     _modem.attach(callback(this, &ModemCommandAdapter::recv_cb), RawSerial::RxIrq);
-    _thr1.start(callback(this, &ModemCommandAdapter::thr1_cb));
+    _thread.start(callback(this, &ModemCommandAdapter::thread_cb));
 }
 
 ModemCommandAdapter::~ModemCommandAdapter() {
-    _thr1.terminate();
+    _thread.terminate();
     if ( _cur_response != NULL) {
         ModemResponse_delete(_cur_response);
         _mail.free(_cur_response);
@@ -79,9 +79,7 @@ void ModemCommandAdapter::set_state(ModemCommandState s) {
 }
 
 void ModemCommandAdapter::reset_buf() {
-    p_bufptr = &buf[0];
-    buf_idx = 0;
-    memset(buf,0,buf_size);
+    _buf.reset();
 }
 
 ModemResponseAlloc* ModemCommandAdapter::get_current_response() {
@@ -103,21 +101,23 @@ void ModemCommandAdapter::recv_cb() {
     }
 
     int c = _modem.getc();
-    
-    if (buf_idx < buf_size-1) {
-        *p_bufptr++ = c;
-        buf_idx++;
-    } else {
-        // TODO: overflow of buffer. flush as line
+    if ( !_buf.full()) {
+        _buf.push(c);
     }
 
-    if (buf_idx >=2 && buf[buf_idx-2] == '\r' && buf[buf_idx-1] == '\n') {
+    // check EOL
+    if ( (_buf.size() >= 2 && c == '\n') || _buf.full()) {
+        
+        // shovel into a string
+        string *line = new string();
+        while(!_buf.empty()) {
+            char d;
+            if (_buf.pop(d)) {
+                line->push_back(d);
+            }
+        }
 
-        buf[buf_idx] = '\0';
-        string *line = new string(buf);
-
-        // strip ws, put into queue for thread to pick it up.
-        line->erase(line->find_last_not_of("\t\n\v\f\r ") + 1);
+        // put into queue for thread to pick it up.
         _queue.put(line);
 
         reset_buf();
@@ -129,7 +129,7 @@ void ModemCommandAdapter::recv_cb() {
     }
 }
 
-void ModemCommandAdapter::thr1_cb() {
+void ModemCommandAdapter::thread_cb() {
      while (true) {
         osEvent evt = _queue.get();
         if (evt.status == osEventMessage) {
@@ -141,6 +141,8 @@ void ModemCommandAdapter::thr1_cb() {
                 // store infos in _cur_response
 
                 debug_0(line->c_str(), line->length(), '<');
+                // strip ws
+                line->erase(line->find_last_not_of("\t\n\v\f\r ") + 1);
 
                 bool b = false;
                 if (line->find("OK") == 0) {
