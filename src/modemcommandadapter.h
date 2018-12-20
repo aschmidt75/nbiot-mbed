@@ -31,6 +31,8 @@ using namespace std;
 
 #include <modemresponse.h>
 
+namespace Narrowband {
+
 #ifdef __NBIOT_MBED_DEBUG_0
 void debug_0_impl(const char *p, const size_t sz, char prefix);
 #define debug_0(p,sz,prefix) debug_0_impl(p,sz,prefix)
@@ -55,8 +57,8 @@ public:
     ~ModemCommandAdapter();
 
     // send command to modem, wait up to timeout msecs for response,
-    // store in r. R is allocated
-    bool send(const char *p_cmd, ModemResponse*& r, unsigned long timeout = 0);
+    // store in r.
+    bool send(const char *p_cmd, ModemResponse& r, unsigned long timeout = 0);
 
     ModemCommandState get_state() { return _state; };
 
@@ -87,3 +89,5 @@ private:
 
     ModemResponseAlloc              *_cur_response;                     // holds the response currently begin read from modem
 };
+
+}

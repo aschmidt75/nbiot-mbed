@@ -1,6 +1,6 @@
 #include <mbed.h>
-#include <modemresponse.h>
-#include <modemcommandadapter.h>
+#include "modemresponse.h"
+#include "modemcommandadapter.h"
 
 // connect serials to USB (pc) and modem
 // Check your board's spec which pins map to the modem shield
@@ -9,33 +9,32 @@ Serial pc(USBTX, USBRX);
 RawSerial modem(PA_0, PA_1);
 
 // uses AT+CFUN? to check if modem is enabled
-bool get_functionality(ModemCommandAdapter *mca, bool& enabled) {
+bool get_functionality(Narrowband::ModemCommandAdapter *mca, bool& enabled) {
     bool res = false;
 
-    ModemResponse *r;
+    Narrowband::ModemResponse r;
     if (mca->send("AT+CFUN?", r, 1000)) {
         // grab cmdresponses for code.
         string cfun_value;
-        if ( r->getCommandResponse("+CFUN", cfun_value)) {
+        if ( r.getCommandResponse("+CFUN", cfun_value)) {
             res = true;
             enabled = (cfun_value == "1");            
         }
     }
-    delete r;
     return res;
 }
 
 // use ATI to get the product identification
-bool get_product_identification(ModemCommandAdapter *mca, string& vendor, string& model, string& revision) {
+bool get_product_identification(Narrowband::ModemCommandAdapter *mca, string& vendor, string& model, string& revision) {
     bool res = false;
 
-    ModemResponse *r;
+    Narrowband::ModemResponse r;
     if (mca->send("ATI", r, 1000)) {
         // ATI returns information as line responses,
         // vendor, model and revision. They can be accessed
         // by iterating the list.
-        if ( r != NULL && r->getResponses().size() >= 3) {
-            list<string>::iterator it = r->getResponses().begin(); 
+        if ( r.getResponses().size() >= 3) {
+            list<string>::iterator it = r.getResponses().begin(); 
 
             vendor = it->c_str();
             ++it; model = it->c_str();
@@ -44,7 +43,6 @@ bool get_product_identification(ModemCommandAdapter *mca, string& vendor, string
             res = true;
         }
     }
-    delete r;
     return res;
 }
 
@@ -58,17 +56,16 @@ int main() {
     modem.baud(9600);
 
 
-    ModemCommandAdapter *mca = new ModemCommandAdapter(modem);
+    Narrowband::ModemCommandAdapter *mca = new Narrowband::ModemCommandAdapter(modem);
 
     // wait for attention..
     bool b_noat = true;
     while(b_noat) {
-        ModemResponse *r;
+        wait(1);
+        Narrowband::ModemResponse r;
         if (mca->send("AT", r, 100)) {
             b_noat = false;
         }
-        if (r) delete r;
-        wait(1);
     }
 
     // 
@@ -104,12 +101,9 @@ int main() {
             if ( c == '\n') {
                 *p_buf_ui++ = '\0';
 
-                ModemResponse *r;
+                Narrowband::ModemResponse r;
                 if ( mca->send(buf_ui, r, 2000)) {
-                    if ( r) {
-                        debug_1(r);
-                        delete r;
-                    }
+                    debug_1(&r);
                 }
 
                 // clear buf

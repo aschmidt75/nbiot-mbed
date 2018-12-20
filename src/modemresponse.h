@@ -27,6 +27,9 @@
 
 using namespace std;
 
+namespace Narrowband {
+
+
 class ModemCommandAdapter;
 
 /**
@@ -42,14 +45,23 @@ public:
     ModemResponse();
     ModemResponse(ModemResponse& r);
 
+    ModemResponse& operator=(ModemResponse& r);
+    ModemResponse& operator=(const ModemResponse& r);
+
     bool isOk() const { return b_ok; };
     bool hasError() const { return b_error; };
     bool isUnsolicited() const { return b_unsolicited; };
 
+    // retrieve the command responses as a multimap
     multimap<string,string>& getCommandResponses() { return cmdresponses; }
+
+    // retrieve individual command response by key (first value only)
     bool getCommandResponse(const string& key, string& value);
 
+    // retrieve list of non-command responses
     list<string>& getResponses() { return responses; }
+
+    // check for presence of an individual non-command response
     bool hasResponse(const string& key);
 
 protected:    
@@ -74,3 +86,6 @@ void debug_1_impl(ModemResponse *m);
 #else
 #define debug_1(m)
 #endif
+
+
+}

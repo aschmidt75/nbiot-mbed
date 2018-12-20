@@ -22,6 +22,8 @@
 #include <mbed.h>
 #include "modemresponse.h"
 
+namespace Narrowband {
+
 ModemResponse::ModemResponse() :
     b_ok(false), b_error(false), b_unsolicited(false) { }
 
@@ -37,6 +39,27 @@ bool ModemResponse::getCommandResponse(const string& key, string& value) {
     }
     return false;
 }
+
+ModemResponse& ModemResponse::operator=(ModemResponse& r)
+{
+    b_ok = r.b_ok; 
+    b_error = r.b_error; 
+    b_unsolicited = r.b_unsolicited; 
+    cmdresponses = r.cmdresponses;
+    responses = r.responses;
+    return *this;
+}
+
+ModemResponse& ModemResponse::operator=(const ModemResponse& r)
+{
+    b_ok = r.b_ok; 
+    b_error = r.b_error; 
+    b_unsolicited = r.b_unsolicited; 
+    cmdresponses = r.cmdresponses;
+    responses = r.responses;
+    return *this;
+}
+
 
 bool ModemResponse::hasResponse(const string& key) {
     for ( list<string>::iterator it = responses.begin(); it != responses.end(); ++it) {
@@ -80,3 +103,5 @@ void debug_1_impl(ModemResponse *m) {
 #endif
 }
 
+
+}

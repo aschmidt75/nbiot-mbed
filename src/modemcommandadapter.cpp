@@ -22,6 +22,8 @@
 #include "modemresponse.h"
 #include "modemcommandadapter.h"
 
+namespace Narrowband {
+
 void debug_0_impl(const char *p, const size_t sz, char prefix) {
 #ifdef __NBIOT_MBED_DEBUG_0
     if ( sz <= 0 || p == 0) {
@@ -117,6 +119,8 @@ void ModemCommandAdapter::recv_cb() {
             }
         }
 
+        // strip ws
+        line->erase(line->find_last_not_of("\t\n\v\f\r ") + 1);
         // put into queue for thread to pick it up.
         _queue.put(line);
 
@@ -141,8 +145,6 @@ void ModemCommandAdapter::thread_cb() {
                 // store infos in _cur_response
 
                 debug_0(line->c_str(), line->length(), '<');
-                // strip ws
-                line->erase(line->find_last_not_of("\t\n\v\f\r ") + 1);
 
                 bool b = false;
                 if (line->find("OK") == 0) {
@@ -211,12 +213,10 @@ bool ModemCommandAdapter::ensure_state(ModemCommandState s, unsigned long timeou
     return true;
 }
 
-bool ModemCommandAdapter::send(const char *p_cmd, ModemResponse* &r, unsigned long timeout) {
+bool ModemCommandAdapter::send(const char *p_cmd, ModemResponse& r, unsigned long timeout) {
     if (p_cmd == NULL || strlen(p_cmd) < 2 || !(p_cmd[0]=='A' && p_cmd[1]=='T') ) {
         return false;
     }
-
-    r = NULL;
 
     // wait for adapter to become idle..
     if (ensure_state(idle, timeout)) {
@@ -233,9 +233,9 @@ bool ModemCommandAdapter::send(const char *p_cmd, ModemResponse* &r, unsigned lo
         osEvent evt = _mail.get(timeout);
         if (evt.status == osEventMail) {
             ModemResponseAlloc* p_m = (ModemResponseAlloc*)evt.value.p;
-            r = p_m->obj;
+            r = *(p_m->obj);
 
-            debug_1(r);
+            debug_1(&r);
 
             // free the allocator wrapper
             _mail.free(p_m);
@@ -247,3 +247,5 @@ bool ModemCommandAdapter::send(const char *p_cmd, ModemResponse* &r, unsigned lo
     return false;
 }
 
+
+}
