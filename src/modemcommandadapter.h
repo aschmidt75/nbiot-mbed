@@ -31,6 +31,8 @@ using namespace std;
 
 #include <modemresponse.h>
 
+namespace Narrowband {
+
 #ifdef __NBIOT_MBED_DEBUG_0
 void debug_0_impl(const char *p, const size_t sz, char prefix);
 #define debug_0(p,sz,prefix) debug_0_impl(p,sz,prefix)
@@ -51,14 +53,12 @@ enum ModemCommandState {
  */
 class ModemCommandAdapter {
 public:
-    const static size_t buf_size = 1024;
-
     ModemCommandAdapter(RawSerial& modem);
     ~ModemCommandAdapter();
 
     // send command to modem, wait up to timeout msecs for response,
-    // store in r. R is allocated
-    bool send(const char *p_cmd, ModemResponse*& r, unsigned long timeout = 0);
+    // store in r.
+    bool send(const char *p_cmd, ModemResponse& r, unsigned long timeout = 0);
 
     ModemCommandState get_state() { return _state; };
 
@@ -71,7 +71,7 @@ protected:
 
     // waits on _queue. parses lines into a ModemResponse. Sends
     // response to _mail
-    void thr1_cb();
+    void thread_cb();
 
     void set_state(ModemCommandState s);
     bool ensure_state(ModemCommandState s, unsigned long timeout = 0);
@@ -82,13 +82,12 @@ private:
     ModemCommandState               _state;
 
     RawSerial&                      _modem;
-    Queue<string, 8>                _queue;     // queues string lines coming back from modem
-    Thread                          _thr1;      // thread processes lines from _queue
-    Mail<ModemResponseAlloc, 8>     _mail;      // mailbox to receive ModemResponses
+    CircularBuffer<char, 256>       _buf;       // buffer characters from modem
+    Queue<string, 16>               _queue;                             // queues string lines coming back from modem
+    Thread                          _thread;                            // thread processes lines from _queue
+    Mail<ModemResponseAlloc, 8>     _mail;                              // mailbox to receive ModemResponses
 
-    char buf[ModemCommandAdapter::buf_size];
-    char *p_bufptr;
-    size_t buf_idx;
-
-    ModemResponseAlloc                   *_cur_response;     // holds the response currently begin read from modem
+    ModemResponseAlloc              *_cur_response;                     // holds the response currently begin read from modem
 };
+
+}
