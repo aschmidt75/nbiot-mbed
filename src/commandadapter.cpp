@@ -19,8 +19,10 @@
  *  contact the authors (see README).
  */
 #include <mbed.h>
+#include <cstdlib>
 #include "modemresponse.h"
-#include "modemcommandadapter.h"
+#include "commandadapter.h"
+
 
 namespace Narrowband {
 
@@ -61,13 +63,16 @@ void debug_0_impl(const char *p, const size_t sz, char prefix) {
 #endif
 }
 
-ModemCommandAdapter::ModemCommandAdapter(RawSerial& modem) : _state(idle), _modem(modem), _cur_response(NULL) {
+
+template <typename T> 
+CommandAdapter<T>::CommandAdapter(T& modem) : CommandAdapterBase(), _state(idle), _modem(modem), _cur_response(NULL) {
     reset_buf();
-    _modem.attach(callback(this, &ModemCommandAdapter::recv_cb), RawSerial::RxIrq);
-    _thread.start(callback(this, &ModemCommandAdapter::thread_cb));
+    _modem.attach(callback(this, &CommandAdapter<T>::recv_cb), RawSerial::RxIrq);
+    _thread.start(callback(this, &CommandAdapter<T>::thread_cb));
 }
 
-ModemCommandAdapter::~ModemCommandAdapter() {
+template <typename T>
+CommandAdapter<T>::~CommandAdapter() {
     _thread.terminate();
     if ( _cur_response != NULL) {
         ModemResponse_delete(_cur_response);
@@ -75,16 +80,13 @@ ModemCommandAdapter::~ModemCommandAdapter() {
     }
 }
 
-void ModemCommandAdapter::set_state(ModemCommandState s) { 
-    //printf("MCA state from=%d to=%d\n", _state, s);
-    _state = s; 
-}
-
-void ModemCommandAdapter::reset_buf() {
+template <typename T>
+void CommandAdapter<T>::reset_buf() {
     _buf.reset();
 }
 
-ModemResponseAlloc* ModemCommandAdapter::get_current_response() {
+template <typename T>
+ModemResponseAlloc* CommandAdapter<T>::get_current_response() {
     if (_cur_response == NULL) {
         _cur_response = _mail.calloc();
         ModemResponse_init(_cur_response);
@@ -92,7 +94,8 @@ ModemResponseAlloc* ModemCommandAdapter::get_current_response() {
     return _cur_response;
 }
 
-void ModemCommandAdapter::recv_cb() {   
+template <typename T>
+void CommandAdapter<T>::recv_cb() {   
     if (get_state() == receiving_response) {
         // this is part of the response we're waiting for.
     } else {
@@ -133,7 +136,8 @@ void ModemCommandAdapter::recv_cb() {
     }
 }
 
-void ModemCommandAdapter::thread_cb() {
+template <typename T>
+void CommandAdapter<T>::thread_cb() {
      while (true) {
         osEvent evt = _queue.get();
         if (evt.status == osEventMessage) {
@@ -151,11 +155,17 @@ void ModemCommandAdapter::thread_cb() {
                     b = true;
                     r->b_ok = true;
                 } 
-                if (line->find("+CME ERROR:") == 0 || line->find("ERROR") == 0) {
+                if (line->find("ERROR") == 0) {
+                    b = true;
+                    r->b_error = true;
+                }
+                std::size_t cme_error_pos = line->find("+CME ERROR: ");
+                if (cme_error_pos != std::string::npos) {
                     b = true;
                     r->b_error = true;
 
-                    // todo: extract +CME error code.
+                    string code = line->substr(cme_error_pos+12);
+                    r->errcode = atoi(code.c_str());
                 }
                 if ( !r->b_error && (*line)[0] == '+') {
                     b = true;
@@ -208,12 +218,14 @@ void ModemCommandAdapter::thread_cb() {
 }
 
 
-bool ModemCommandAdapter::ensure_state(ModemCommandState s, unsigned long timeout) {
+template <typename T>
+bool CommandAdapter<T>::ensure_state(ModemCommandState s, unsigned long timeout) {
     while( _state != s);
     return true;
 }
 
-bool ModemCommandAdapter::send(const char *p_cmd, ModemResponse& r, unsigned long timeout) {
+template <typename T>
+bool CommandAdapter<T>::send(const char *p_cmd, ModemResponse& r, unsigned long timeout) {
     if (p_cmd == NULL || strlen(p_cmd) < 2 || !(p_cmd[0]=='A' && p_cmd[1]=='T') ) {
         return false;
     }
@@ -247,5 +259,45 @@ bool ModemCommandAdapter::send(const char *p_cmd, ModemResponse& r, unsigned lon
     return false;
 }
 
+template <typename T>
+bool CommandAdapter<T>::send(const char *p_cmd, Callback<void(ModemResponse&)> cb, unsigned long timeout) {
+    if (p_cmd == NULL || strlen(p_cmd) < 2 || !(p_cmd[0]=='A' && p_cmd[1]=='T') ) {
+        return false;
+    }
+
+    // wait for adapter to become idle..
+    if (ensure_state(idle, timeout)) {
+        size_t l = strlen(p_cmd);
+        debug_0(p_cmd, l, '>' );
+
+        set_state(sending_command);
+        _modem.puts(p_cmd);
+        _modem.putc('\r');
+        _modem.putc('\n');
+        set_state(receiving_response);
+
+        // wait for response.
+        osEvent evt = _mail.get(timeout);
+        if (evt.status == osEventMail) {
+            ModemResponseAlloc* p_m = (ModemResponseAlloc*)evt.value.p;
+
+            debug_1(p_m->obj);
+            // call back
+            cb(*(p_m->obj));
+
+            _mail.free(p_m);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+template class CommandAdapter<mbed::RawSerial>;
 
 }
+
+#include "mockserial.h"
+template class Narrowband::CommandAdapter<MockSerial>;
+

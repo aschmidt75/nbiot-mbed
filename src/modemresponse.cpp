@@ -25,11 +25,12 @@
 namespace Narrowband {
 
 ModemResponse::ModemResponse() :
-    b_ok(false), b_error(false), b_unsolicited(false) { }
+    b_ok(false), b_error(false), b_unsolicited(false), errcode(0) { 
+    }
 
 ModemResponse::ModemResponse(ModemResponse& r) :
     b_ok(r.b_ok), b_error(r.b_error), b_unsolicited(r.b_unsolicited),
-    cmdresponses(r.cmdresponses), responses(r.responses) { }
+    cmdresponses(r.cmdresponses), responses(r.responses), errcode(0) { }
 
 bool ModemResponse::getCommandResponse(const string& key, string& value) {
     multimap<string,string>::iterator it = cmdresponses.find(key);
@@ -45,6 +46,7 @@ ModemResponse& ModemResponse::operator=(ModemResponse& r)
     b_ok = r.b_ok; 
     b_error = r.b_error; 
     b_unsolicited = r.b_unsolicited; 
+    errcode = r.errcode;
     cmdresponses = r.cmdresponses;
     responses = r.responses;
     return *this;
@@ -55,6 +57,7 @@ ModemResponse& ModemResponse::operator=(const ModemResponse& r)
     b_ok = r.b_ok; 
     b_error = r.b_error; 
     b_unsolicited = r.b_unsolicited; 
+    errcode = r.errcode;
     cmdresponses = r.cmdresponses;
     responses = r.responses;
     return *this;
@@ -86,7 +89,12 @@ void debug_1_impl(ModemResponse *m) {
 
     printf("(");
     if (m->hasError()) {
-        printf("ERR ");
+        printf("ERR");
+        if ( m->getErrCode() != 0) {
+            printf("[%d] ", m->getErrCode());
+        } else {
+            printf(" ");
+        }
     }
     if (m->isOk()) {
         printf("OK ");

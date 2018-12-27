@@ -47,18 +47,26 @@ enum ModemCommandState {
     receiving_unsolicited_response
 };
 
-/**
- * ModemCommandAdapter is a wrapper around Serial/RawSerial. It processes
- * messages from the modem in a separate thread.
- */
-class ModemCommandAdapter {
-public:
-    ModemCommandAdapter(RawSerial& modem);
-    ~ModemCommandAdapter();
-
+struct CommandAdapterBase {
     // send command to modem, wait up to timeout msecs for response,
-    // store in r.
-    bool send(const char *p_cmd, ModemResponse& r, unsigned long timeout = 0);
+    // store in r. return true if response has been received in time. 
+    virtual bool send(const char *p_cmd, ModemResponse& r, unsigned long timeout) = 0;
+
+    virtual bool send(const char *p_cmd, Callback<void(ModemResponse&)> cb, unsigned long timeout) = 0;
+
+};
+
+/**
+ */
+template <typename T>
+class CommandAdapter : public CommandAdapterBase {
+public:
+    CommandAdapter(T& modem);
+    ~CommandAdapter();
+
+    bool send(const char *p_cmd, ModemResponse& r, unsigned long timeout);
+
+    bool send(const char *p_cmd, Callback<void(ModemResponse&)> cb, unsigned long timeout);
 
     ModemCommandState get_state() { return _state; };
 
@@ -73,7 +81,7 @@ protected:
     // response to _mail
     void thread_cb();
 
-    void set_state(ModemCommandState s);
+    void set_state(ModemCommandState s) { _state = s; }
     bool ensure_state(ModemCommandState s, unsigned long timeout = 0);
 
     ModemResponseAlloc* get_current_response();
@@ -81,8 +89,8 @@ protected:
 private:
     ModemCommandState               _state;
 
-    RawSerial&                      _modem;
-    CircularBuffer<char, 256>       _buf;       // buffer characters from modem
+    T&                              _modem;
+    CircularBuffer<char, 256>       _buf;                               // buffer characters from modem
     Queue<string, 16>               _queue;                             // queues string lines coming back from modem
     Thread                          _thread;                            // thread processes lines from _queue
     Mail<ModemResponseAlloc, 8>     _mail;                              // mailbox to receive ModemResponses
