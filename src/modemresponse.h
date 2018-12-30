@@ -29,8 +29,8 @@ using namespace std;
 
 namespace Narrowband {
 
-
 class ModemCommandAdapter;
+template <class T> class CommandAdapter;
 
 /**
  * A ModemResponse is a block of data as the modem's response
@@ -40,6 +40,7 @@ class ModemCommandAdapter;
  */
 class ModemResponse {
 friend class ModemCommandAdapter;
+template <class T> friend class CommandAdapter;
 
 public:
     ModemResponse();
@@ -51,6 +52,9 @@ public:
     bool isOk() const { return b_ok; };
     bool hasError() const { return b_error; };
     bool isUnsolicited() const { return b_unsolicited; };
+
+    // returns modem internal error code (if found)
+    unsigned int getErrCode() const { return errcode; };
 
     // retrieve the command responses as a multimap
     multimap<string,string>& getCommandResponses() { return cmdresponses; }
@@ -70,6 +74,7 @@ protected:
     bool b_unsolicited;     // true if message is unsolicited
     multimap<string,string> cmdresponses;      // contains responses of the type +CMD:<params>
     list<string>  responses;                   // contains responses of type <params>
+    unsigned int errcode;     // if CMEE=1, error code (if found)
 };
 
 struct ModemResponseAlloc {

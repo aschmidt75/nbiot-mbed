@@ -1,6 +1,6 @@
 #include <mbed.h>
 #include "modemresponse.h"
-#include "modemcommandadapter.h"
+#include "commandadapter.h"
 
 // connect serials to USB (pc) and modem
 // Check your board's spec which pins map to the modem shield
@@ -9,7 +9,7 @@ Serial pc(USBTX, USBRX);
 RawSerial modem(PA_0, PA_1);
 
 // uses AT+CFUN? to check if modem is enabled
-bool get_functionality(Narrowband::ModemCommandAdapter *mca, bool& enabled) {
+bool get_functionality(Narrowband::CommandAdapterBase *mca, bool& enabled) {
     bool res = false;
 
     Narrowband::ModemResponse r;
@@ -25,7 +25,7 @@ bool get_functionality(Narrowband::ModemCommandAdapter *mca, bool& enabled) {
 }
 
 // use ATI to get the product identification
-bool get_product_identification(Narrowband::ModemCommandAdapter *mca, string& vendor, string& model, string& revision) {
+bool get_product_identification(Narrowband::CommandAdapterBase *mca, string& vendor, string& model, string& revision) {
     bool res = false;
 
     Narrowband::ModemResponse r;
@@ -55,8 +55,7 @@ int main() {
     pc.baud(115200);
     modem.baud(9600);
 
-
-    Narrowband::ModemCommandAdapter *mca = new Narrowband::ModemCommandAdapter(modem);
+    Narrowband::CommandAdapter<mbed::RawSerial> *mca = new Narrowband::CommandAdapter<mbed::RawSerial>(modem);
 
     // wait for attention..
     bool b_noat = true;
