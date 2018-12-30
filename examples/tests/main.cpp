@@ -20,12 +20,14 @@ size_t ASSERT_NUM_FAILED = 0;
 
 #define TIMEOUT 1000
 
+// Empty or non-AT commands are not executed
 void testNonAtCommandIsNotAccepted() {
     ModemResponse r;
     TEST_ASSERT(mca.send("NON-AT-COMMAND", r, TIMEOUT) == false);
     wait(1);
 }
 
+// command response with OK with all elements present
 void testOkCmdResponse() {
     modem.reset();
     modem.setExpectString("AT+UNITTEST\r\n");
@@ -44,8 +46,33 @@ void testOkCmdResponse() {
     TEST_ASSERT(r.getCommandResponse("+KEY1", v) == true);
     TEST_ASSERT(v == "1");
 
+    TEST_ASSERT(r.getCommandResponse("+KEY2", v) == true);
+    TEST_ASSERT(v == "2");
+
+    TEST_ASSERT(r.getCommandResponse("+KEY-NONEX", v) == false);
+
+    TEST_ASSERT(r.getResponses().size() == 1);
+    TEST_ASSERT(r.getResponses().front() == "RESPLINE");
+
 }
 
+// test for error response
+void testErr() {
+    modem.reset();
+    modem.setExpectString("AT+UNITTEST\r\n");
+    modem.setResponse("ERROR\r\n");
+
+    ModemResponse r;
+    bool res = mca.send("AT+UNITTEST", r, TIMEOUT);
+    wait(1);
+
+    TEST_ASSERT(res == true);
+    TEST_ASSERT(r.isOk() == false);
+    TEST_ASSERT(r.hasError() == true);
+    TEST_ASSERT(r.getErrCode() == 0);
+}
+
+// test for error response with detail error code
 void testErrCode() {
     modem.reset();
     modem.setExpectString("AT+UNITTEST\r\n");
@@ -69,6 +96,7 @@ int main() {
 
     testNonAtCommandIsNotAccepted();
     testOkCmdResponse();
+    testErr();
     testErrCode();
 
     //

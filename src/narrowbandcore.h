@@ -34,16 +34,33 @@ public:
 
     void reboot();
 
+    bool setEcho(bool bEcho);
+
+    bool setReportError(bool bEnable);
+
+    list<string> getModuleInfo();
+
+    string getModelIdentification();
+
     string getManufacturerIdentification();
 
+    string getIMSI();
+
     string getIMEI();
+
+    bool getModuleFunctionality(bool& fullFunctionality);
+
+    bool setModuleFunctionality(bool fullFunctionality);
 
 protected:
     CommandAdapterBase&    _ca;
 
 private:
-    // exec_generic_first_from_responses -> e
-    string e(string const& command);
+    bool d(const string & command, unsigned int timeout = 1000);
+
+    string e(const string & command, unsigned int timeout = 1000);
+
+    string f(const string & command, const string & key, unsigned int timeout = 1000);
 };
 
 }

@@ -41,6 +41,29 @@ void NarrowbandCore::reboot() {
     _ca.send("AT+NRB", r, 10000);
 }
 
+bool NarrowbandCore::setEcho(bool bEcho) {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "ATE=%d", bEcho);
+    return d(buf);
+}
+
+bool NarrowbandCore::setReportError(bool bEnable) {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "AT+CMEE=%d", bEnable);
+    return d(buf);
+}
+
+
+list<string> NarrowbandCore::getModuleInfo() {
+    ModemResponse r;
+    if (_ca.send("ATI", r, 1000)) {
+        return r.getResponses();
+    }
+}
+
+string NarrowbandCore::getModelIdentification() {
+    return e("AT+CGMM");
+}
 string NarrowbandCore::getManufacturerIdentification() {
     return e("AT+CGMI");
 }
@@ -49,13 +72,43 @@ string NarrowbandCore::getIMEI() {
     return e("AT+CGSN");
 }
 
+string NarrowbandCore::getIMSI() {
+    return e("AT+CIMI");
+}
+
+bool NarrowbandCore::getModuleFunctionality(bool& fullFunctionality) {
+    string v = f("AT+CFUN?", "+CFUN");
+    if (v.length() != 1) {
+        return false;
+    }
+    fullFunctionality = (v == "1");
+    return true;
+}
+
+bool NarrowbandCore::setModuleFunctionality(bool fullFunctionality) {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "AT+CFUN=%d", fullFunctionality);
+    return d(buf, 5000);
+    
+}
+
+
+bool NarrowbandCore::d( const string & cmd, unsigned int timeout) {
+    ModemResponse r;
+    if (_ca.send(cmd.c_str(), r, timeout)) {
+        return r.isOk();
+    }
+    return false;
+}
+
+
 // executes cmd with a default timeout (TODO),
 // takes the first non-echo line from result responses as
 // return. returns empty string in case of error or
 // empty responses.
-string NarrowbandCore::e( string const& cmd) {
+string NarrowbandCore::e( const string & cmd, unsigned int timeout) {
     ModemResponse r;
-    if (_ca.send(cmd.c_str(), r, 1000)) {
+    if (_ca.send(cmd.c_str(), r, timeout)) {
         if ( r.isOk()) {
             if ( r.getResponses().size() > 0) {
                 string s = r.getResponses().front();
@@ -69,6 +122,17 @@ string NarrowbandCore::e( string const& cmd) {
         };
     }
     return "";
+}
+
+string NarrowbandCore::f( const string & cmd, const string & key, unsigned int timeout) {
+    ModemResponse r;
+    string res = "";
+    if (_ca.send(cmd.c_str(), r, timeout)) {
+        if ( r.isOk()) {
+            (void)r.getCommandResponse(key, res);
+        };
+    }
+    return res;
 }
 
 }
