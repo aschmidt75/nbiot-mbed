@@ -41,24 +41,20 @@ void NarrowbandCore::reboot() {
     _ca.send("AT+NRB", r, 10000);
 }
 
-bool NarrowbandCore::setEcho(bool bEcho) {
-    char buf[32];
-    snprintf(buf, sizeof(buf), "ATE=%d", bEcho);
-    return d(buf);
+OnOffControl NarrowbandCore::echo() {
+    return OnOffControl(_ca, "", "ATE=", "", false, true);
 }
 
-bool NarrowbandCore::setReportError(bool bEnable) {
-    char buf[32];
-    snprintf(buf, sizeof(buf), "AT+CMEE=%d", bEnable);
-    return d(buf);
+OnOffControl NarrowbandCore::reportError() {
+    return OnOffControl(_ca, "AT+CMEE", "+CMEE", true, true);
 }
-
 
 list<string> NarrowbandCore::getModuleInfo() {
     ModemResponse r;
     if (_ca.send("ATI", r, 1000)) {
         return r.getResponses();
     }
+    return list<string>();
 }
 
 string NarrowbandCore::getModelIdentification() {
@@ -68,30 +64,20 @@ string NarrowbandCore::getManufacturerIdentification() {
     return e("AT+CGMI");
 }
 
-string NarrowbandCore::getIMEI() {
-    return e("AT+CGSN");
+StringControl NarrowbandCore::IMEI() {
+    return StringControl(_ca, "AT+CGSN", "", true, false);
 }
 
-string NarrowbandCore::getIMSI() {
-    return e("AT+CIMI");
+StringControl NarrowbandCore::IMSI() {
+    return StringControl(_ca, "AT+CIMI", "", true, false);
 }
 
-bool NarrowbandCore::getModuleFunctionality(bool& fullFunctionality) {
-    string v = f("AT+CFUN?", "+CFUN");
-    if (v.length() != 1) {
-        return false;
-    }
-    fullFunctionality = (v == "1");
-    return true;
+OnOffControl NarrowbandCore::moduleFunctionality() {
+    OnOffControl c(_ca, "AT+CFUN", "+CFUN", true, true);
+    c.read_timeout() = 500;
+    c.write_timeout() = 5000;
+    return c;
 }
-
-bool NarrowbandCore::setModuleFunctionality(bool fullFunctionality) {
-    char buf[32];
-    snprintf(buf, sizeof(buf), "AT+CFUN=%d", fullFunctionality);
-    return d(buf, 5000);
-    
-}
-
 
 bool NarrowbandCore::d( const string & cmd, unsigned int timeout) {
     ModemResponse r;

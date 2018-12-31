@@ -22,6 +22,7 @@
 #pragma once
 
 #include "commandadapter.h"
+#include "controls.h"
 #include <string>
 
 namespace Narrowband {
@@ -34,9 +35,9 @@ public:
 
     void reboot();
 
-    bool setEcho(bool bEcho);
+    OnOffControl echo();
 
-    bool setReportError(bool bEnable);
+    OnOffControl reportError();
 
     list<string> getModuleInfo();
 
@@ -44,13 +45,11 @@ public:
 
     string getManufacturerIdentification();
 
-    string getIMSI();
+    StringControl IMSI();
 
-    string getIMEI();
+    StringControl IMEI();
 
-    bool getModuleFunctionality(bool& fullFunctionality);
-
-    bool setModuleFunctionality(bool fullFunctionality);
+    OnOffControl moduleFunctionality();
 
 protected:
     CommandAdapterBase&    _ca;

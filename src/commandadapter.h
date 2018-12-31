@@ -47,7 +47,8 @@ enum ModemCommandState {
     receiving_unsolicited_response
 };
 
-struct CommandAdapterBase {
+class CommandAdapterBase {
+public:
     // send command to modem, wait up to timeout msecs for response,
     // store in r. return true if response has been received in time. 
     virtual bool send(const char *p_cmd, ModemResponse& r, unsigned long timeout) = 0;
