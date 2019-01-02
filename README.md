@@ -1,5 +1,6 @@
 # nbiot-mbed
 Narrowband IoT Library for mbed os
+* C++98
 
 Currently supported modules:
 

@@ -41,9 +41,9 @@ public:
 
     list<string> getModuleInfo();
 
-    string getModelIdentification();
+    StringControl modelIdentification();
 
-    string getManufacturerIdentification();
+    StringControl manufacturerIdentification();
 
     StringControl IMSI();
 
@@ -51,15 +51,15 @@ public:
 
     OnOffControl moduleFunctionality();
 
+    OperatorSelectionControl operatorSelection();
+
+    PDPContextControl PDPContexts();
+
+    BandControl bands() const;
+
 protected:
     CommandAdapterBase&    _ca;
 
-private:
-    bool d(const string & command, unsigned int timeout = 1000);
-
-    string e(const string & command, unsigned int timeout = 1000);
-
-    string f(const string & command, const string & key, unsigned int timeout = 1000);
 };
 
 }

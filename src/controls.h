@@ -27,6 +27,10 @@ protected:
 
     unsigned int _read_timeout;
     unsigned int _write_timeout;
+
+    bool d(const string & command, unsigned int timeout = 1000) const;
+    string e(const string & command, unsigned int timeout = 1000) const;
+    string f(const string & command, const string & key, unsigned int timeout = 1000) const;
 };
 
 class StringControl : public ControlBase {
@@ -62,6 +66,72 @@ private:
     string  _cmdread, _cmdwrite, _key;
 };
 
+enum OperatorSelectMode {
+    Unknown = -1,
+    Automatic = 0,
+    Manual = 1,
+    Deregister = 2
+};
+
+class OperatorSelectionControl : public ControlBase {
+public:
+    OperatorSelectionControl(CommandAdapterBase& cab);
+    OperatorSelectionControl(const OperatorSelectionControl& rhs);
+
+    OperatorSelectMode& mode() { return _mode; }
+    string& operatorName() { return _operatorName; }
+
+    virtual bool get();
+    virtual bool set();
+
+protected:
+    OperatorSelectMode  _mode;
+    string              _operatorName;
+};
+
+struct PDPContext {
+
+    int             cid;
+    string          type;
+    string          apn;
+
+    PDPContext(int _cid = -1, string _type = "", string _apn = "") : cid(_cid),type(_type),apn(_apn) { }
+    PDPContext(const PDPContext& rhs) : cid(rhs.cid), type(rhs.type), apn(rhs.apn) { }
+
+    bool operator==(const PDPContext& other) const {
+        return type == other.type && apn == other.apn;
+    };
+};
+
+typedef std::map<int, PDPContext>    PDPContextList;
+
+class PDPContextControl : public ControlBase {
+public:
+    PDPContextControl(CommandAdapterBase& cab);
+    PDPContextControl(const PDPContextControl& rhs);
+
+    virtual bool query();
+    virtual const PDPContextList& get() const { return _contexts; }; 
+    virtual bool set(const PDPContext& );
+
+    bool hasContextByTypeAndAPN(string type, string apn);
+
+protected:
+    PDPContextList    _contexts;
+};
+
+class BandControl : public ControlBase {
+public:
+    BandControl(CommandAdapterBase& cab);
+    BandControl(const BandControl& rhs);
+
+    virtual list<int> supportedBands() const;
+    virtual list<int> activeBands() const;
+    virtual bool set(const list<int>& ) const;
+
+private:
+    list<int> csv_to_intlist(string ) const;
+};
 
 }
 

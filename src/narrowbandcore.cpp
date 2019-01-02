@@ -57,11 +57,12 @@ list<string> NarrowbandCore::getModuleInfo() {
     return list<string>();
 }
 
-string NarrowbandCore::getModelIdentification() {
-    return e("AT+CGMM");
+StringControl NarrowbandCore::modelIdentification() {
+    return StringControl(_ca, "AT+CGMM", "", true, false);
 }
-string NarrowbandCore::getManufacturerIdentification() {
-    return e("AT+CGMI");
+
+StringControl NarrowbandCore::manufacturerIdentification() {
+    return StringControl(_ca, "AT+CGMI", "", true, false);
 }
 
 StringControl NarrowbandCore::IMEI() {
@@ -79,46 +80,17 @@ OnOffControl NarrowbandCore::moduleFunctionality() {
     return c;
 }
 
-bool NarrowbandCore::d( const string & cmd, unsigned int timeout) {
-    ModemResponse r;
-    if (_ca.send(cmd.c_str(), r, timeout)) {
-        return r.isOk();
-    }
-    return false;
+OperatorSelectionControl NarrowbandCore::operatorSelection() {
+    return OperatorSelectionControl(_ca);
 }
 
-
-// executes cmd with a default timeout (TODO),
-// takes the first non-echo line from result responses as
-// return. returns empty string in case of error or
-// empty responses.
-string NarrowbandCore::e( const string & cmd, unsigned int timeout) {
-    ModemResponse r;
-    if (_ca.send(cmd.c_str(), r, timeout)) {
-        if ( r.isOk()) {
-            if ( r.getResponses().size() > 0) {
-                string s = r.getResponses().front();
-                // check for echo enabled, remove echo
-                if ( s == cmd) {
-                    r.getResponses().pop_front();
-                }
-                s = r.getResponses().front();
-                return s;
-            }
-        };
-    }
-    return "";
+PDPContextControl NarrowbandCore::PDPContexts() {
+    return PDPContextControl(_ca);
 }
 
-string NarrowbandCore::f( const string & cmd, const string & key, unsigned int timeout) {
-    ModemResponse r;
-    string res = "";
-    if (_ca.send(cmd.c_str(), r, timeout)) {
-        if ( r.isOk()) {
-            (void)r.getCommandResponse(key, res);
-        };
-    }
-    return res;
+BandControl NarrowbandCore::bands() const {
+    return BandControl(_ca);
 }
+
 
 }
