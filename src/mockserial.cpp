@@ -23,6 +23,7 @@ void MockSerial::setResponse(const char *str) {
 
 int MockSerial::putc(int c) {
     *p_put_buf++ = c;
+    return 0;
 }
 
 int MockSerial::puts(const char *str) {
@@ -30,6 +31,7 @@ int MockSerial::puts(const char *str) {
     while (*p) {
         putc(*p++);
     }    
+    return 0;
 }
 
 int MockSerial::getc() {

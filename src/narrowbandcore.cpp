@@ -92,5 +92,9 @@ BandControl NarrowbandCore::bands() const {
     return BandControl(_ca);
 }
 
+NConfigControl NarrowbandCore::nconfig() const {
+    return NConfigControl(_ca);
+}
+
 
 }

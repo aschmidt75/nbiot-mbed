@@ -160,7 +160,6 @@ bool OnOffControl::set(bool value) const {
 }
 
 
-
 OperatorSelectionControl::OperatorSelectionControl(CommandAdapterBase& cab) :
     ControlBase(cab) {
 
@@ -193,7 +192,7 @@ PDPContextControl::PDPContextControl(const PDPContextControl& rhs) :
 
 }
 
-bool PDPContextControl::query() {
+bool PDPContextControl::get() {
     ModemResponse r;
     if (_cab.send("AT+CGDCONT?", r, _read_timeout)) {
         if ( r.isOk()) {
@@ -295,21 +294,74 @@ bool BandControl::set(const list<int>& b) const {
 
 list<int> BandControl::csv_to_intlist(string line) const {
     string buf;
-    int idx = 0;
 
     list<int> res;
     for ( string::iterator it = line.begin(); it != line.end(); ++it) {
         char n = (*it);
-        if ( n != ',') {
-            buf += n;
+        if ( n == '(' || n == ')') {
+            // ignore
         } else {
-            res.push_back(atoi(buf.c_str()));
-            idx++;
-            buf = "";
+            if ( n != ',') {
+                buf += n;
+            } else {
+                res.push_back(atoi(buf.c_str()));
+                buf = "";
+            }
         }
+    }
+    if ( buf != "") {
+        res.push_back(atoi(buf.c_str()));
     }
 
     return res;
 }
+
+NConfigControl::NConfigControl(CommandAdapterBase& cab) : ControlBase(cab) { 
+    read_timeout() = 5000;
+}
+
+NConfigControl::NConfigControl(const NConfigControl& rhs) : ControlBase(rhs) { }
+
+bool NConfigControl::get() {
+    if ( readable()) {
+        ModemResponse r;
+        if (_cab.send("AT+NCONFIG?", r, _read_timeout)) {
+            if ( r.isOk()) {
+                _entries.clear();
+
+                std::multimap<string,string>& m = r.getCommandResponses();
+                for ( std::multimap<string,string>::iterator it = m.begin(); it != m.end(); ++it) {
+                    string v = it->second;
+
+                    size_t n = v.find(",");
+                    if ( n != std::string::npos) {
+                        string k = v.substr(0,n);
+                        string val = v.substr(n+1,v.length());
+
+                        _entries.insert(pair<string,string>(k,val));
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool NConfigControl::set(string key, string value) {
+    if ( writeable()) {
+        ModemResponse r;
+        char buf[256];
+        snprintf(buf,sizeof(buf), "AT+NCONFIG=%s,%s", key.c_str(), value.c_str());
+
+        if (_cab.send(buf, r, _write_timeout)) {
+            if (r.isOk()) {
+                get();
+            }
+        }
+    }
+    return false;
+
+}
+
 
 }

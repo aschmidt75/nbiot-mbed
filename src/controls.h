@@ -66,6 +66,7 @@ private:
     string  _cmdread, _cmdwrite, _key;
 };
 
+
 enum OperatorSelectMode {
     Unknown = -1,
     Automatic = 0,
@@ -90,7 +91,6 @@ protected:
 };
 
 struct PDPContext {
-
     int             cid;
     string          type;
     string          apn;
@@ -110,10 +110,16 @@ public:
     PDPContextControl(CommandAdapterBase& cab);
     PDPContextControl(const PDPContextControl& rhs);
 
-    virtual bool query();
-    virtual const PDPContextList& get() const { return _contexts; }; 
+    virtual bool get();
+    const PDPContextList& contexts() const { return _contexts; }; 
+    PDPContext context(int contextId) const { return _contexts.at(contextId); }; 
     virtual bool set(const PDPContext& );
-
+/*
+    bool isActive(const PDPContext& ) const;
+    bool setActive(const PDPContext&, bool b_active);
+    bool activate(const PDPContext& ctx) { setActive(ctx, true); };
+    bool deactivate(const PDPContext& ctx) { setActive(ctx, false); };
+*/
     bool hasContextByTypeAndAPN(string type, string apn);
 
 protected:
@@ -132,6 +138,21 @@ public:
 private:
     list<int> csv_to_intlist(string ) const;
 };
+
+class NConfigControl : public ControlBase {
+public:
+    NConfigControl(CommandAdapterBase& cab);
+    NConfigControl(const NConfigControl& rhs);
+
+    virtual bool get();
+    const std::map<string,string>& get() const { return _entries; };
+    const string& valueFor(string key) const { return _entries.at(key); };
+    virtual bool set(string key, string value);
+
+private:
+    std::map<string,string>     _entries;
+};
+
 
 }
 

@@ -31,31 +31,47 @@ class NarrowbandCore {
 public:
     NarrowbandCore(CommandAdapterBase&);
 
+    // checks if modem is ready
     bool ready();    
 
+    // reboots module
     void reboot();
 
+    // turns echo on or off
     OnOffControl echo();
 
+    // turns UE error reporting on or off 
     OnOffControl reportError();
 
+    // returns module info
     list<string> getModuleInfo();
 
+    // returns model identification
     StringControl modelIdentification();
 
+    // returns manufacturer identification
     StringControl manufacturerIdentification();
 
+    // returns an IMSI control
     StringControl IMSI();
 
+    // returns an IMEI control
     StringControl IMEI();
 
+    // turns module on or off
     OnOffControl moduleFunctionality();
 
+    // 
     OperatorSelectionControl operatorSelection();
 
+    // get/set/activate PDP Contexts
     PDPContextControl PDPContexts();
 
+    // get/set active bands
     BandControl bands() const;
+
+    // get/set configuration
+    NConfigControl nconfig() const;
 
 protected:
     CommandAdapterBase&    _ca;
