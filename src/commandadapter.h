@@ -1,9 +1,9 @@
 /*
  *  Copyright (C) 2018  Digital Incubation & Growth GmbH
  *
- *   This program is free software; you can redistribute it and/or modify
+ *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 2 of the License, or
+ *   the Free Software Foundation, either version 3 of the License, or
  *   (at your option) any later version.
  *
  *   This program is distributed in the hope that it will be useful,
@@ -11,9 +11,8 @@
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   GNU General Public License for more details.
  *
- *   You should have received a copy of the GNU General Public License along
- *   with this program; if not, write to the Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *  This software is dual-licensed. For commercial licensing options, please
  *  contact the authors (see README).
@@ -47,7 +46,8 @@ enum ModemCommandState {
     receiving_unsolicited_response
 };
 
-struct CommandAdapterBase {
+class CommandAdapterBase {
+public:
     // send command to modem, wait up to timeout msecs for response,
     // store in r. return true if response has been received in time. 
     virtual bool send(const char *p_cmd, ModemResponse& r, unsigned long timeout) = 0;
@@ -68,7 +68,7 @@ public:
 
     bool send(const char *p_cmd, Callback<void(ModemResponse&)> cb, unsigned long timeout);
 
-    ModemCommandState get_state() { return _state; };
+    ModemCommandState get_state() const { return _state; };
 
 protected:
     void reset_buf();

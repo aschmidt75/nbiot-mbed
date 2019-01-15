@@ -1,9 +1,9 @@
 /*
  *  Copyright (C) 2018  Digital Incubation & Growth GmbH
  *
- *   This program is free software; you can redistribute it and/or modify
+ *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 2 of the License, or
+ *   the Free Software Foundation, either version 3 of the License, or
  *   (at your option) any later version.
  *
  *   This program is distributed in the hope that it will be useful,
@@ -11,9 +11,8 @@
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   GNU General Public License for more details.
  *
- *   You should have received a copy of the GNU General Public License along
- *   with this program; if not, write to the Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *  This software is dual-licensed. For commercial licensing options, please
  *  contact the authors (see README).
@@ -22,6 +21,7 @@
 #pragma once
 
 #include "commandadapter.h"
+#include "controls.h"
 #include <string>
 
 namespace Narrowband {
@@ -30,37 +30,51 @@ class NarrowbandCore {
 public:
     NarrowbandCore(CommandAdapterBase&);
 
+    // checks if modem is ready
     bool ready();    
 
+    // reboots module
     void reboot();
 
-    bool setEcho(bool bEcho);
+    // turns echo on or off
+    OnOffControl echo();
 
-    bool setReportError(bool bEnable);
+    // turns UE error reporting on or off 
+    OnOffControl reportError();
 
+    // returns module info
     list<string> getModuleInfo();
 
-    string getModelIdentification();
+    // returns model identification
+    StringControl modelIdentification();
 
-    string getManufacturerIdentification();
+    // returns manufacturer identification
+    StringControl manufacturerIdentification();
 
-    string getIMSI();
+    // returns an IMSI control
+    StringControl IMSI();
 
-    string getIMEI();
+    // returns an IMEI control
+    StringControl IMEI();
 
-    bool getModuleFunctionality(bool& fullFunctionality);
+    // turns module on or off
+    OnOffControl moduleFunctionality();
 
-    bool setModuleFunctionality(bool fullFunctionality);
+    // 
+    OperatorSelectionControl operatorSelection();
+
+    // get/set/activate PDP Contexts
+    PDPContextControl PDPContexts();
+
+    // get/set active bands
+    BandControl bands() const;
+
+    // get/set configuration
+    NConfigControl nconfig() const;
 
 protected:
     CommandAdapterBase&    _ca;
 
-private:
-    bool d(const string & command, unsigned int timeout = 1000);
-
-    string e(const string & command, unsigned int timeout = 1000);
-
-    string f(const string & command, const string & key, unsigned int timeout = 1000);
 };
 
 }

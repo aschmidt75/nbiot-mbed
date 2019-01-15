@@ -26,20 +26,23 @@ int main() {
         wait(1);
     }
 
-    nbc.setEcho(false);
-    nbc.setReportError(true);
+    nbc.echo().off();
+
+    // check and turn on detailed error report
+    printf("Detail error reports: %s\n", ((bool)nbc.reportError()?"on":"off"));
+    nbc.reportError().on();
 
     printf("This is a %s from %s\n", 
-        nbc.getModelIdentification().c_str(), 
-        nbc.getManufacturerIdentification().c_str());
+        nbc.modelIdentification().get().c_str(), 
+        nbc.manufacturerIdentification().get().c_str());
 
     //
     bool enabled;
-    if (nbc.getModuleFunctionality(enabled)) {
+    if (nbc.moduleFunctionality().get(enabled)) {
         printf("modem is %senabled\n", (enabled?"":"not "));
     }
     if ( !enabled) {
-        if ( nbc.setModuleFunctionality(true)) {
+        if ( nbc.moduleFunctionality().on()) {
             printf("Now enabled.\n");
             enabled = true;
         } else {
@@ -47,8 +50,8 @@ int main() {
         }
     }
 
-    printf("IMEI: %s\n", nbc.getIMEI().c_str());
+    printf("IMEI: %s\n", nbc.IMEI().get().c_str() );
     if (enabled) {
-        printf("IMSI: %s\n", nbc.getIMSI().c_str());
+        printf("IMSI: %s\n", nbc.IMSI().get().c_str());
     }
 }
