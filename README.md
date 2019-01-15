@@ -9,6 +9,6 @@ Currently supported modules:
 
 # License
 
-(C)opyright 2018 Digital Incubation & Growth GmbH, GPL.
+(C)opyright 2018 Digital Incubation & Growth GmbH, GPLv3.
 
 See LICENSE file for more details. This software is dual-licensed. For commercial licensing options, please contact info@thingforward.io
