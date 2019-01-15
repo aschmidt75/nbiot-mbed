@@ -69,7 +69,7 @@ public:
 
     bool send(const char *p_cmd, Callback<void(ModemResponse&)> cb, unsigned long timeout);
 
-    ModemCommandState get_state() { return _state; };
+    ModemCommandState get_state() const { return _state; };
 
 protected:
     void reset_buf();
