@@ -191,12 +191,73 @@ OperatorSelectionControl::OperatorSelectionControl(const OperatorSelectionContro
 }
 
 bool OperatorSelectionControl::get() {
-    // AT+COPS?
+    ModemResponse r;
+    if ( _cab.send("AT+COPS?",r, _read_timeout)) {
+        if ( r.isOk()) {
+            string v;
+            if (r.getCommandResponse("+COPS", v)) {
+                v += ",";
+
+                // parse line
+                string buf;
+                int idx = 0;
+
+                for ( string::iterator it = v.begin(); it != v.end(); ++it) {
+                    char n = (*it);
+                    if ( n != ',' && it != v.end()) {
+                        buf += n;
+                    } else {
+                        if ( idx == 0) {
+                            this->_mode = Unknown;
+                            if ( buf == "0") { this->_mode = Automatic; }
+                            else if ( buf == "1") { this->_mode = Manual; }
+                            else if ( buf == "2") { this->_mode = Deregister; }
+                        }
+                        if ( idx == 1) {
+                            // format is fixed to 2;
+                        }
+                        if ( idx == 2) {
+                            size_t n = buf.length()-1;
+                            this->_operatorName = buf;
+                            size_t n1 = (buf[0] == '\"')?1:0;
+                            size_t n2 = (buf[n] == '\"')?n-1:n;
+                            string v2 = this->_operatorName.substr(n1,n2);
+                            this->_operatorName = v2;
+                        }
+
+                        idx++;
+                        buf = "";
+                    }
+                }
+
+                return true;
+            }
+        }
+    }
     return false;
 }
 
 bool OperatorSelectionControl::set() {
-    // AT+COPS=
+    char buf[128];
+    memset(buf,0,sizeof(buf));
+
+    if ( _mode == Automatic) {
+        snprintf(buf,sizeof(buf),"AT+COPS=0");
+    }
+    if ( _mode == Manual) {
+        snprintf(buf,sizeof(buf),"AT+COPS=1,2,\"%s\"",_operatorName.c_str());
+    }
+    if ( _mode == Deregister) {
+        snprintf(buf,sizeof(buf),"AT+COPS=2");
+    }
+
+    if ( strlen(buf) > 0) {
+        ModemResponse r;
+        if (_cab.send(buf, r, _write_timeout)) {
+            return r.isOk();
+        }
+    }
+
     return false;
 }
 
@@ -222,6 +283,7 @@ bool PDPContextControl::get() {
             multimap<string,string>& m = r.getCommandResponses();
             for ( multimap<string,string>::iterator it = m.begin(); it != m.end(); ++it) {
                 string line = (*it).second;
+                line += ",";
                 // parse line
                 string buf;
                 int idx = 0;
@@ -383,5 +445,120 @@ bool NConfigControl::set(string key, string value) {
 
 }
 
+
+
+ConnectionStatusControl::ConnectionStatusControl(CommandAdapterBase& cab) : ControlBase(cab) { }
+
+ConnectionStatusControl::ConnectionStatusControl(const ConnectionStatusControl& rhs) : ControlBase(rhs) { }
+
+pair<bool,int> ConnectionStatusControl::get() const {
+    pair<bool,int> res = make_pair<bool,int>(false,-1);
+
+    if ( readable()) {
+        ModemResponse r;
+        if (_cab.send("AT+CSCON?", r, _read_timeout)) {
+            if ( r.isOk()) {
+                string v;
+                r.getCommandResponse("+CSCON",v);
+                if(v.length() > 0) {
+                    size_t n = v.find_first_of(",");
+                    if ( n > 0 && n != string::npos) {
+                        string s1 = v.substr(0,n);
+                        string s2 = v.substr(n+1,v.length());
+
+                        res.first = ( s1 == "1")?true:false;
+                        res.second = ( s2 == "1")?true:false;
+                    }
+                }
+
+            }
+        }
+    }
+
+    return res;
+}
+
+bool ConnectionStatusControl::set(bool bUnsolicitedResult) {
+    if ( writeable()) {
+        ModemResponse r;
+        char buf[256];
+        snprintf(buf,sizeof(buf), "AT+CSCON=%d", bUnsolicitedResult);
+
+        if (_cab.send(buf, r, _write_timeout)) {
+            if (r.isOk()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+
+
+NetworkRegistrationStatusControl::NetworkRegistrationStatusControl(CommandAdapterBase& cab) : ControlBase(cab) { }
+
+//NetworkRegistrationStatusControl::NetworkRegistrationStatusControl(const NetworkRegistrationStatusControl& rhs) : ControlBase(rhs) { }
+
+bool NetworkRegistrationStatusControl::get(int& status) const {
+    if ( readable()) {
+        ModemResponse r;
+        if (_cab.send("AT+CEREG?", r, _read_timeout)) {
+            if ( r.isOk()) {
+                string v;
+                r.getCommandResponse("+CEREG",v);
+                if(v.length() > 0) {
+                    v += ",";
+
+                    // parse line
+                    string buf;
+                    int idx = 0;
+
+                    for ( string::iterator it = v.begin(); it != v.end(); ++it) {
+                        char n = (*it);
+                        if ( n != ',' && it != v.end()) {
+                            buf += n;
+                        } else {
+                            if ( idx == 0) {
+                                // unsolicited result code status
+                            }
+                            if ( idx == 1) {
+                                status = atoi(buf.c_str());
+                            }
+
+                            idx++;
+                            buf = "";
+                        }
+                    }
+
+                    return true;
+                }
+
+            }
+        }
+    }
+
+    return false;
+}
+
+bool NetworkRegistrationStatusControl::set(int mode) {
+    if ( writeable()) {
+        ModemResponse r;
+        char buf[64];
+        snprintf(buf,sizeof(buf), "AT+CEREG=%d", mode);
+
+        if (_cab.send(buf, r, _write_timeout)) {
+            if (r.isOk()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+AttachmentControl::AttachmentControl(CommandAdapterBase& cab) : OnOffControl(cab, "AT+CGATT?", "AT+CGATT=", "+CGATT", true, true) 
+{ }
+
+AttachmentControl::AttachmentControl(const AttachmentControl& rhs) : OnOffControl(rhs) { }
 
 }

@@ -94,5 +94,16 @@ NConfigControl NarrowbandCore::nconfig() const {
     return NConfigControl(_ca);
 }
 
+ConnectionStatusControl NarrowbandCore::connectionStatus() const {
+    return ConnectionStatusControl(_ca);
+}
+
+NetworkRegistrationStatusControl NarrowbandCore::networkRegistrationStatus() const {
+    return NetworkRegistrationStatusControl(_ca);
+}
+
+AttachmentControl NarrowbandCore::attachment() const {
+    return AttachmentControl(_ca);
+}
 
 }
