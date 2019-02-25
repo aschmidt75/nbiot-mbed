@@ -173,6 +173,40 @@ private:
     std::map<string,string>     _entries;
 };
 
+class ConnectionStatusControl : public ControlBase {
+public:
+    ConnectionStatusControl(CommandAdapterBase& cab);
+    ConnectionStatusControl(const ConnectionStatusControl& rhs);
+
+    pair<bool,int> get() const;
+    bool isIdle() const { return get().second == 0; }
+    bool isConnected() const { return get().second == 1; }
+
+    bool set(bool bUnsolicitedResult);
+}; 
+
+class NetworkRegistrationStatusControl : public ControlBase {
+public:
+    NetworkRegistrationStatusControl(CommandAdapterBase& cab);
+    NetworkRegistrationStatusControl(const ConnectionStatusControl& rhs);
+
+    bool get(int& status) const;
+    bool isRegistered() const { int r = -1; get(r); return r == 1 || r == 5; }
+
+    bool set(int mode);
+}; 
+
+class AttachmentControl : protected OnOffControl {
+public:
+    AttachmentControl(CommandAdapterBase& cab);
+    AttachmentControl(const AttachmentControl& rhs);
+
+    bool isAttached() const { bool r = -1; (void)get(r); return r == 1; }
+    bool isDetached() const { bool r = -1; (void)get(r); return r == 0; }
+
+    bool attach() { return set(1); }
+    bool detach() { return set(0); }
+};
 
 }
 

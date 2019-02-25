@@ -72,6 +72,12 @@ public:
     // get/set configuration
     NConfigControl nconfig() const;
 
+    ConnectionStatusControl connectionStatus() const;
+
+    NetworkRegistrationStatusControl networkRegistrationStatus() const;
+
+    AttachmentControl attachment() const;
+
 protected:
     CommandAdapterBase&    _ca;
 

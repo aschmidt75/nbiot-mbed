@@ -48,6 +48,8 @@ private:
 struct NarrowbandConfig {
     config_item<bool>          echo_on;
     config_item<list<int> >    bands;
+    config_item<OperatorSelectMode>     ops_mode;
+    config_item<string>                 ops_name;
 };
 
 class Narrowband {
@@ -70,17 +72,14 @@ public:
     bool configure(const NarrowbandConfig&);
 
     // trigger network attachment
-    bool attach();
-    void attach(Thread& t);
+    bool startAttach();
+    bool startDetach();
 
-    // check if attach to network
+    // check if attached to network
     bool isAttached() const;
 
 protected:
     NarrowbandCore&    _core;
-
-private:
-    void attach_(void);
 };
 
 }

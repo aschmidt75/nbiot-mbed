@@ -48,6 +48,13 @@ void Narrowband::currentConfiguration(NarrowbandConfig& c) const {
     if ( c.bands) {
         c.bands.set(_core.bands().activeBands());
     }
+    if ( c.ops_mode || c.ops_name) {
+        OperatorSelectionControl osc = _core.operatorSelection();
+        osc.get();
+
+        c.ops_mode.set(osc.mode());
+        c.ops_name.set(osc.operatorName());
+    }
 }
 
 bool Narrowband::configure(const NarrowbandConfig& c) {
@@ -58,24 +65,33 @@ bool Narrowband::configure(const NarrowbandConfig& c) {
         list<int> v = c.bands.get();
         _core.bands().set(v);
     }
+    if ( c.ops_mode) {
+        OperatorSelectionControl osc = _core.operatorSelection();
+        if ( c.ops_mode.get() == Manual && c.ops_name) {
+            osc.mode() = Manual;
+            osc.operatorName() = c.ops_name;
+            osc.set();
+        } else if ( c.ops_mode.get() == Automatic || c.ops_mode.get() == Deregister) {
+            osc.mode() = Manual;
+            osc.set();
+        }
+    }
     return false;
 }
 
 
-bool Narrowband::attach() {
-    return false;
+bool Narrowband::startAttach() {
+    _core.connectionStatus().set(0);                // disable unsolicited result codes
+    _core.networkRegistrationStatus().set(0);       // same here
+    return _core.attachment().attach();
 }
 
-void Narrowband::attach(Thread& t) {
-    t.start(this, &Narrowband::attach_);
-}
-
-void Narrowband::attach_(void) {
+bool Narrowband::startDetach() {
+    return _core.attachment().detach();
 }
 
 bool Narrowband::isAttached() const {
-    return false;
+    return _core.attachment().isAttached();
 }
-
 
 }
