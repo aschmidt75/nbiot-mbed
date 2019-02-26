@@ -78,6 +78,8 @@ public:
 
     AttachmentControl attachment() const;
 
+    UDPSocketControl udp() const;
+
 protected:
     CommandAdapterBase&    _ca;
 

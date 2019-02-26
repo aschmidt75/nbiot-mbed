@@ -134,12 +134,12 @@ public:
     const PDPContextList& contexts() const { return _contexts; }; 
     PDPContext context(int contextId) const { return _contexts.at(contextId); }; 
     virtual bool set(const PDPContext& );
-/*
+
     bool isActive(const PDPContext& ) const;
     bool setActive(const PDPContext&, bool b_active);
-    bool activate(const PDPContext& ctx) { setActive(ctx, true); };
-    bool deactivate(const PDPContext& ctx) { setActive(ctx, false); };
-*/
+    bool activate(const PDPContext& ctx) { return setActive(ctx, true); };
+    bool deactivate(const PDPContext& ctx) { return setActive(ctx, false); };
+
     bool hasContextByTypeAndAPN(string type, string apn);
 
 protected:
@@ -206,6 +206,47 @@ public:
 
     bool attach() { return set(1); }
     bool detach() { return set(0); }
+};
+
+class SocketControl : public ControlBase {
+public:
+    SocketControl(CommandAdapterBase& cab);
+    SocketControl(const SocketControl& rhs);
+    virtual ~SocketControl();
+
+    void setReceiveControl( bool b = true) { _bReceiveControl = b; }
+
+    virtual bool open();
+    virtual bool close();
+
+    virtual const char *getType() = 0;
+    virtual int getProtocol() = 0;
+
+    bool isOpen() { return _socket != 0; }
+
+protected:
+    int     _localPort;
+    bool    _bReceiveControl;
+    int     _socket;
+
+    static  long    socket_id_ctr;
+
+    static long next_socket_id() {
+            socket_id_ctr = (socket_id_ctr+1)%32767;
+            return socket_id_ctr;
+    }
+};
+
+class UDPSocketControl : public SocketControl {
+public:
+    UDPSocketControl(CommandAdapterBase& cab);
+    UDPSocketControl(const UDPSocketControl& rhs);
+
+    bool sendTo(const char *remoteAddr, unsigned int remotePort, size_t length, const uint8_t *p_data);
+    bool sendTo(const char *remoteAddr, unsigned int remotePort, string body);
+
+    virtual const char *getType() { return "DGRAM"; };
+    virtual int getProtocol() { return 17; }
 };
 
 }

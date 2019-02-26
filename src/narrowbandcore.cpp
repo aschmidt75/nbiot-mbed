@@ -106,4 +106,9 @@ AttachmentControl NarrowbandCore::attachment() const {
     return AttachmentControl(_ca);
 }
 
+UDPSocketControl NarrowbandCore::udp() const {
+    return UDPSocketControl(_ca);
+}
+
+
 }
