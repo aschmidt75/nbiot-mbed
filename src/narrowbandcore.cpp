@@ -78,6 +78,10 @@ OnOffControl NarrowbandCore::moduleFunctionality() {
     return c;
 }
 
+SignalQualityControl NarrowbandCore::signalQuality() {
+    return SignalQualityControl(_ca);
+}
+
 OperatorSelectionControl NarrowbandCore::operatorSelection() {
     return OperatorSelectionControl(_ca);
 }
@@ -105,5 +109,10 @@ NetworkRegistrationStatusControl NarrowbandCore::networkRegistrationStatus() con
 AttachmentControl NarrowbandCore::attachment() const {
     return AttachmentControl(_ca);
 }
+
+UDPSocketControl NarrowbandCore::udp() const {
+    return UDPSocketControl(_ca);
+}
+
 
 }

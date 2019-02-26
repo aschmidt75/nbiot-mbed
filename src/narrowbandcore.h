@@ -60,6 +60,8 @@ public:
     // turns module on or off
     OnOffControl moduleFunctionality();
 
+    SignalQualityControl signalQuality();
+
     // 
     OperatorSelectionControl operatorSelection();
 
@@ -77,6 +79,8 @@ public:
     NetworkRegistrationStatusControl networkRegistrationStatus() const;
 
     AttachmentControl attachment() const;
+
+    UDPSocketControl udp() const;
 
 protected:
     CommandAdapterBase&    _ca;

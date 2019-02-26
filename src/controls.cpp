@@ -344,6 +344,60 @@ bool PDPContextControl::set(const PDPContext& c) {
     return false;
 }
 
+bool PDPContextControl::isActive(const PDPContext& ctx) const {
+    ModemResponse r;
+    if ( _cab.send("AT+CGACT?",r, _read_timeout)) {
+        if ( r.isOk()) {
+            string v;
+            if (r.getCommandResponse("+CGACT", v)) {
+                v += ",";
+
+                // parse line
+                string buf;
+                int idx = 0;
+                int cid = -1;
+                int state = -1;
+
+                for ( string::iterator it = v.begin(); it != v.end(); ++it) {
+                    char n = (*it);
+                    if ( n != ',' && it != v.end()) {
+                        buf += n;
+                    } else {
+                        if ( idx == 0) {
+                            cid = atoi(buf.c_str());
+                        }
+                        if ( idx == 1) {
+                            state = atoi(buf.c_str());
+                        }
+                        idx++;
+                        buf = "";
+                    }
+                }
+
+                return (ctx.cid == cid && state == 1);
+            }
+        }
+    }
+    return false;
+
+}
+
+bool PDPContextControl::setActive(const PDPContext& ctx, bool b_active) {
+    char buf[128];
+    memset(buf,0,sizeof(buf));
+
+    snprintf(buf,sizeof(buf),"AT+CGACT=%d,%d",b_active,ctx.cid);
+    ModemResponse r;
+    if (_cab.send(buf, r, _write_timeout)) {
+        return r.isOk();
+    }
+
+    return false;
+
+}
+
+
+
 BandControl::BandControl(CommandAdapterBase& cab) : ControlBase(cab) { }
 
 BandControl::BandControl(const BandControl& rhs) : ControlBase(rhs) { }
@@ -560,5 +614,161 @@ AttachmentControl::AttachmentControl(CommandAdapterBase& cab) : OnOffControl(cab
 { }
 
 AttachmentControl::AttachmentControl(const AttachmentControl& rhs) : OnOffControl(rhs) { }
+
+
+
+SocketControl::SocketControl(CommandAdapterBase& cab) : ControlBase(cab) {
+    _localPort = -1;
+    _socket = 0;
+    _bReceiveControl = false;
+}
+
+SocketControl::SocketControl(const SocketControl& rhs) : ControlBase(rhs), 
+    _localPort(rhs._localPort), _bReceiveControl(rhs._bReceiveControl), _socket(rhs._socket) {
+
+}
+
+SocketControl::~SocketControl() {
+    if ( isOpen()) {
+        close();
+    }
+}
+
+// TODO: let user set seed from specific random seed source.
+long SocketControl::socket_id_ctr = rand()%32767;
+
+bool SocketControl::open() {
+    if ( _socket > 0) {
+        return false;       // already open
+    }
+
+    // figure out a listen port
+    _localPort = 32767+next_socket_id();
+
+    ModemResponse r;
+    char buf[64];
+    snprintf(buf,sizeof(buf), "AT+NSOCR=%s,%d,%d,%d", getType(), getProtocol(), _localPort, _bReceiveControl?1:0);
+
+    if (_cab.send(buf, r, _write_timeout)) {
+        if (r.isOk()) {
+
+            string socketID = *(r.getResponses().begin());
+            _socket = atoi(socketID.c_str());
+
+            return true;
+        } else {
+            _localPort = -1;
+        }
+    }
+    return false;
+}
+
+bool SocketControl::close() {
+    if ( _socket <= 0) {
+        return false;
+    }
+
+    ModemResponse r;
+    char buf[64];
+    snprintf(buf,sizeof(buf), "AT+NSOCL=%d", _socket);
+
+    if (_cab.send(buf, r, _write_timeout)) {
+        if (r.isOk()) {
+            _localPort = -1;
+            _socket = 0;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+UDPSocketControl::UDPSocketControl(CommandAdapterBase& cab) : SocketControl(cab) {
+}
+
+UDPSocketControl::UDPSocketControl(const UDPSocketControl& rhs) : SocketControl(rhs) {
+}
+
+bool UDPSocketControl::sendTo(const char *remoteAddr, unsigned int remotePort, size_t length, const uint8_t *p_data) {
+    if ( length > 1358) {
+        return false;   // to large. 
+    }
+    size_t n = 1+length*2;
+    char *hexbuf = (char*)malloc(n); 
+    memset(hexbuf,0,n);
+
+    char *q = hexbuf;
+    for ( size_t i = 0; i < length; i++) {
+        sprintf(q, "%.2X", p_data[i]);
+        q += 2;
+    }
+
+    ModemResponse r;
+    char buf[2048];
+    snprintf(buf,sizeof(buf), "AT+NSOST=%d,%s,%d,%d,%s", _socket, remoteAddr, remotePort, length, hexbuf);
+    free(hexbuf);
+
+    if (_cab.send(buf, r, _write_timeout)) {
+        if (r.isOk()) {
+            // TODO: parse return socket,length. check.
+            return true;
+        }
+    }
+    return false;
+}
+
+bool UDPSocketControl::sendTo(const char *remoteAddr, unsigned int remotePort, string body) {
+    return sendTo(remoteAddr, remotePort, body.length(), (const uint8_t*)body.c_str());
+}
+
+SignalQualityControl::SignalQualityControl(CommandAdapterBase& cab) : StringControl(cab, "AT+CSQ", "", true, false) {
+
+}
+
+SignalQualityControl::SignalQualityControl(const SignalQualityControl& rhs) : StringControl(rhs) {
+
+}
+
+bool SignalQualityControl::get(string &value) const {
+    if ( readable()) {
+        ModemResponse r;
+        if (_cab.send(_cmdread.c_str(), r, _read_timeout)) {
+            if ( r.isOk()) {
+                if ( r.getCommandResponse("+CSQ", value)) {
+                    return true;
+                }
+            };
+        }
+
+    }
+    return false;
+}
+
+int SignalQualityControl::getRSSI() {
+    string v;
+    if ( get(v)) {
+        size_t p = v.find_first_of(',');
+        if ( p != string::npos) {
+            string v1 = v.substr(0,p);
+            return atoi(v1.c_str());
+        }
+    }
+    return -1;
+}
+
+int SignalQualityControl::getBER() {
+    string v;
+    if ( get(v)) {
+        size_t p = v.find_first_of(',');
+        if ( p != string::npos) {
+            string v1 = v.substr(p+1,string::npos);
+            return atoi(v1.c_str());
+        }
+    }
+    return -1;
+
+}
+
 
 }
