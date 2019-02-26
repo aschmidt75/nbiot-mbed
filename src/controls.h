@@ -62,7 +62,7 @@ public:
     virtual bool get(string &value) const;
     virtual bool set(string value) const;
 
-private:
+protected:
     string  _cmdread, _cmdwrite;
 };
 
@@ -82,7 +82,7 @@ public:
 
     operator bool () const { return get(); }
 
-private:
+protected:
     string  _cmdread, _cmdwrite, _key;
 };
 
@@ -247,6 +247,18 @@ public:
 
     virtual const char *getType() { return "DGRAM"; };
     virtual int getProtocol() { return 17; }
+};
+
+class SignalQualityControl : protected StringControl {
+public:
+    SignalQualityControl(CommandAdapterBase& cab);
+    SignalQualityControl(const SignalQualityControl& rhs);
+
+    int getRSSI();
+    int getBER();
+protected:
+    bool get( string& v) const;
+
 };
 
 }

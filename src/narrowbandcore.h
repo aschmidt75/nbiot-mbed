@@ -60,6 +60,8 @@ public:
     // turns module on or off
     OnOffControl moduleFunctionality();
 
+    SignalQualityControl signalQuality();
+
     // 
     OperatorSelectionControl operatorSelection();
 

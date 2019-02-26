@@ -634,6 +634,7 @@ SocketControl::~SocketControl() {
     }
 }
 
+// TODO: let user set seed from specific random seed source.
 long SocketControl::socket_id_ctr = rand()%32767;
 
 bool SocketControl::open() {
@@ -690,12 +691,14 @@ UDPSocketControl::UDPSocketControl(const UDPSocketControl& rhs) : SocketControl(
 }
 
 bool UDPSocketControl::sendTo(const char *remoteAddr, unsigned int remotePort, size_t length, const uint8_t *p_data) {
+    if ( length > 1358) {
+        return false;   // to large. 
+    }
     size_t n = 1+length*2;
     char *hexbuf = (char*)malloc(n); 
     memset(hexbuf,0,n);
 
     char *q = hexbuf;
-    const uint8_t *p = p_data;
     for ( size_t i = 0; i < length; i++) {
         sprintf(q, "%.2X", p_data[i]);
         q += 2;
@@ -708,6 +711,7 @@ bool UDPSocketControl::sendTo(const char *remoteAddr, unsigned int remotePort, s
 
     if (_cab.send(buf, r, _write_timeout)) {
         if (r.isOk()) {
+            // TODO: parse return socket,length. check.
             return true;
         }
     }
@@ -717,5 +721,54 @@ bool UDPSocketControl::sendTo(const char *remoteAddr, unsigned int remotePort, s
 bool UDPSocketControl::sendTo(const char *remoteAddr, unsigned int remotePort, string body) {
     return sendTo(remoteAddr, remotePort, body.length(), (const uint8_t*)body.c_str());
 }
+
+SignalQualityControl::SignalQualityControl(CommandAdapterBase& cab) : StringControl(cab, "AT+CSQ", "", true, false) {
+
+}
+
+SignalQualityControl::SignalQualityControl(const SignalQualityControl& rhs) : StringControl(rhs) {
+
+}
+
+bool SignalQualityControl::get(string &value) const {
+    if ( readable()) {
+        ModemResponse r;
+        if (_cab.send(_cmdread.c_str(), r, _read_timeout)) {
+            if ( r.isOk()) {
+                if ( r.getCommandResponse("+CSQ", value)) {
+                    return true;
+                }
+            };
+        }
+
+    }
+    return false;
+}
+
+int SignalQualityControl::getRSSI() {
+    string v;
+    if ( get(v)) {
+        size_t p = v.find_first_of(',');
+        if ( p != string::npos) {
+            string v1 = v.substr(0,p);
+            return atoi(v1.c_str());
+        }
+    }
+    return -1;
+}
+
+int SignalQualityControl::getBER() {
+    string v;
+    if ( get(v)) {
+        size_t p = v.find_first_of(',');
+        if ( p != string::npos) {
+            string v1 = v.substr(p+1,string::npos);
+            return atoi(v1.c_str());
+        }
+    }
+    return -1;
+
+}
+
 
 }
