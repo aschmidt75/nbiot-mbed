@@ -710,16 +710,21 @@ bool UDPSocketControl::sendTo(const char *remoteAddr, unsigned int remotePort, s
     free(hexbuf);
 
     if (_cab.send(buf, r, _write_timeout)) {
-        if (r.isOk()) {
-            // TODO: parse return socket,length. check.
-            return true;
+        if (r.isOk() && r.getResponses().size() > 0) {
+            string resp = *(r.getResponses().begin());
+
+            // simple check. We expect everything to be sent.
+            char buf[32];
+            snprintf(buf,sizeof(buf), "%d,%d",_socket,length);
+
+            return ( resp == buf);
         }
     }
     return false;
 }
 
-bool UDPSocketControl::sendTo(const char *remoteAddr, unsigned int remotePort, string body) {
-    return sendTo(remoteAddr, remotePort, body.length(), (const uint8_t*)body.c_str());
+bool UDPSocketControl::recvFrom(size_t sz_buf, uint8_t *p_buf, string& remoteAddr, unsigned int& remotePort, size_t length) {
+
 }
 
 SignalQualityControl::SignalQualityControl(CommandAdapterBase& cab) : StringControl(cab, "AT+CSQ", "", true, false) {

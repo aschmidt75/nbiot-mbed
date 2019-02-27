@@ -243,7 +243,8 @@ public:
     UDPSocketControl(const UDPSocketControl& rhs);
 
     bool sendTo(const char *remoteAddr, unsigned int remotePort, size_t length, const uint8_t *p_data);
-    bool sendTo(const char *remoteAddr, unsigned int remotePort, string body);
+    
+    bool recvFrom(size_t sz_buf, uint8_t *p_buf, string& remoteAddr, unsigned int& remotePort, size_t length);
 
     virtual const char *getType() { return "DGRAM"; };
     virtual int getProtocol() { return 17; }
