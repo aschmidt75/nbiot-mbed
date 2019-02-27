@@ -78,6 +78,9 @@ public:
     // check if attached to network
     bool isAttached() const;
 
+    // one-way send to remote ip/port as UDP datagram
+    bool sendUDP(string remoteAddr, unsigned int port, string body);
+
 protected:
     NarrowbandCore&    _core;
 };

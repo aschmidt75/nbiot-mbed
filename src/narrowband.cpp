@@ -94,4 +94,14 @@ bool Narrowband::isAttached() const {
     return _core.attachment().isAttached();
 }
 
+bool Narrowband::sendUDP(string remoteAddr, unsigned int port, string body) {
+    bool res = false;
+    UDPSocketControl sc = _core.udp();
+    if (sc.open()) {
+        res = sc.sendTo(remoteAddr.c_str(), port, body.length(), (const uint8_t*)body.c_str());
+        sc.close();
+    }
+    return res;
+}
+
 }
